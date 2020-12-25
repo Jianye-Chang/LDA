@@ -2,14 +2,23 @@
 the code and data of linear discriminant analysis
 
 
-1.data
+1.code environment
+python>=3.5
+please install numpy,xlrd and matplotlib packages in your python  before using lda code
 
-lda_data1.xlsx，lda_data1.xlsx为原始数据，python运行时请放置C盘目录下
 
-2.code
+2.runing tips
+lda_data1.xlsx and lda_data1.xlsx is the raw data file,please place them at C disk.
 
-请使用python3版本运行代码，且请事先安装好numpy，xlrd，matplotlib三个python包
+
 
 3.picture
 
-my_plot.jpg为python代码执行后生成的文件，若运行python代码，请在D盘查看生成的该文件
+my_plot.jpg that is generated after execution of Python code，if you  want to check it ,please run the python code and See the pictur in D disk
+
+4.result
+code result1 is my_plot.jpg
+code result2 is algorithm error rate,which is presented in python
+
+THE END
+thanks for Professor Wang's and Assistant Hu's attention.Hope you have a pleasant time !
