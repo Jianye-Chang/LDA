@@ -1,0 +1,273 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Dec 18 14:22:19 2020
+
+@author: 常建业
+"""
+
+import numpy as np
+import xlrd
+import matplotlib.pyplot as plt
+
+
+#计算均值,要求输入数据为numpy的矩阵格式，行表示样本数，列表示特征 
+def import_excel_matrix(path):
+    table = xlrd.open_workbook(path).sheets()[0] # 获取第一个sheet表
+    row = table.nrows # 行数
+    col = table.ncols # 列数
+    data_matrix = np.zeros((row, col)) # 生成一个nrows行*ncols列的初始矩阵
+    for i in range(col): # 对列进行遍历
+        cols = np.matrix(table.col_values(i)) # 把list转换为矩阵进行矩阵操作
+        data_matrix[:, i] = cols # 按列把数据存进矩阵中
+    return data_matrix
+ 
+data_file1 = r'C:\lda_data1.xlsx' # Excel文件存储位置
+data_file2 = r'C:\lda_data2.xlsx' 
+
+def meanX(data):
+    return np.mean(data, axis=0) #axis=0表示按照列来求均值，如果输入list,则axis=1
+
+# 计算类内离散度矩阵子项si
+def compute_si(xi):
+    n = xi.shape[0]
+    ui = meanX(xi)
+    si = 0
+    for i in range(0, n):
+        si = si + (xi[i, :] - ui).T * (xi[i, :] - ui)
+    return si
+
+# 计算类间离散度矩阵Sb
+def compute_Sb(x1, x2):
+    dataX=np.vstack((x1,x2))#合并样本
+    print (type(dataX))
+    #计算均值
+    u1=meanX(x1)
+    u2=meanX(x2)
+    u=meanX(dataX) #所有样本的均值
+    Sb = (u-u1).T * (u-u1) + (u-u2).T * (u-u2)
+    return Sb
+
+def LDA(x1, x2):
+    # 计算类内离散度矩阵Sw
+    s1 = compute_si(x1) 
+    s2 = compute_si(x2)
+    # Sw=(n1*s1+n2*s2)/(n1+n2)
+    Sw = s1 + s2
+
+    # 计算类间离散度矩阵Sb
+    # Sb=(n1*(m-m1).T*(m-m1)+n2*(m-m2).T*(m-m2))/(n1+n2)
+    Sb = compute_Sb(x1, x2)
+
+    # 求最大特征值对应的特征向量
+    eig_value, vec = np.linalg.eig(np.mat(Sw).I * Sb)  # 特征值和特征向量
+    index_vec = np.argsort(-eig_value)  # 对eig_value从大到小排序，返回索引
+    eig_index = index_vec[:1]  # 取出最大的特征值的索引
+    w = vec[:, eig_index]  # 取出最大的特征值对应的特征向量
+    return w
+
+#主程序运行
+if __name__ == "__main__":
+    x1=import_excel_matrix(data_file1)
+    x2=import_excel_matrix(data_file2)
+    w = LDA(x1, x2) 
+
+
+#打印w，和w转置，初步验证是否有问题
+print ("w:", w)
+print('w.T',w.T)
+
+
+#计算x1投影的y值，存储至feature_1
+feature_1=[]
+feature_2=[]
+for i in x1:
+    temp=(w[0]*i[0]+w[1]*i[1])
+    feature_1.append(temp[0,0])
+
+#计算x2投影的y值，存储至feature_2    
+for i in x2:
+    temp=(w[0]*i[0]+w[1]*i[1])
+    feature_2.append(temp[0,0])
+
+#画图，初步进行画布设置    
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set(xlim=[-4, 8], ylim=[-4, 8], title='LDA',ylabel='x2', xlabel='x1')
+
+#将正类，负类以散点图的形式画出，正类为蓝色，负类为绿色
+plt.scatter(x1[:,0], x1[:,1],color='blue',s=1,label='Class 1')
+plt.scatter(x2[:,0], x2[:,1],color='green',s=1,label='Class 2')
+
+#求算投影线的斜率
+x = np.linspace(-10,10,100)
+k=(w[1,0]/w[0,0])
+y =k*x
+#画出该线
+plt.plot(x, y, '-r',color='black',linewidth=0.3)
+
+#利用循环求算正类，负类每个点到投影线的投影点，其中涉及法线、截距的求算，并画至画布上
+for  i in range(len(x1)):
+
+    b=x1[i,1]+(1/k)*x1[i,0]
+    
+    plt.scatter(b/(1+(1/k)),k*(b/(1+(1/k))),s=6,color='pink')
+
+b=x1[0,1]+(1/k)*x1[0,0]
+plt.scatter(b/(1+(1/k)),k*(b/(1+(1/k))),s=6,label='Class 1',color='pink')
+
+for  i in range(len(x2)):
+
+    b=x2[i,1]+(1/k)*x2[i,0]
+    
+    plt.scatter(b/(1+(1/k)),k*(b/(1+(1/k))),s=6,color='tomato')
+
+b=x2[1,1]+(1/k)*x2[1,0]
+    
+plt.scatter(b/(1+(1/k)),k*(b/(1+(1/k))),s=6,label='Class 2',color='tomato')
+
+plt.legend()
+
+#将上述所画的图储存于D盘my_plot.hpg中
+plt.savefig('D:\my_plot.jpg',dpi=3600)
+
+
+#采用留一法进行验证，首先进行数据集切片，正类负类各有400个，以100个为单位切片。共8份数据集
+c1=import_excel_matrix(data_file1)
+c2=import_excel_matrix(data_file2)
+train1_1=c1[0:100,0:2]
+train1_2=c1[100:200,0:2]
+train1_3=c1[200:300,0:2]
+train1_4=c1[300:400,0:2]
+
+train2_1=c2[0:100,0:2]
+train2_2=c2[100:200,0:2]
+train2_3=c2[200:300,0:2]
+train2_4=c2[300:400,0:2]
+
+
+#正类三个同类数据集合并，负类三个同类数据合并，以上俩个合并数据作为训练集进行训练，排列组合，共训练4次
+test1_123=np.vstack((train1_1,train1_2,train1_3))
+test1_124=np.vstack((train1_1,train1_2,train1_4))
+test1_134=np.vstack((train1_1,train1_3,train1_4))
+test1_234=np.vstack((train1_2,train1_3,train1_4))
+
+test2_123=np.vstack((train2_1,train2_2,train2_3))
+test2_124=np.vstack((train2_1,train2_2,train2_4))
+test2_134=np.vstack((train2_1,train2_3,train2_4))
+test2_234=np.vstack((train2_2,train2_3,train2_4))
+
+#计算以新的合并数据作为训练集的w
+w1=LDA(test1_123,test2_123)
+w2=LDA(test1_124,test2_124)
+w3=LDA(test1_134,test2_134)
+w4=LDA(test1_234,test2_234)
+
+#计算以新的合并数据作为训练集的斜率k
+k1=(w1[1,0]/w1[0,0])
+k2=(w2[1,0]/w2[0,0])
+k3=(w3[1,0]/w3[0,0])
+k4=(w4[1,0]/w4[0,0])
+
+
+#训练集合并
+test_merge_123=np.vstack((test1_123,test2_123))
+test_merge_124=np.vstack((test1_124,test2_124))
+test_merge_134=np.vstack((test1_134,test2_134))
+test_merge_234=np.vstack((test1_234,test2_234))
+
+#初始化平均值，计算每次训练的x，y的平均值，为后面写判别函数打下基础
+meany1=meany2=meany3=meany4=0
+meanx1=[0,0]
+meanx2=[0,0]
+meanx3=[0,0]
+meanx4=[0,0]
+for i in range(600):
+    meany1+=(w1[0]*test_merge_123[i][0]+w1[1]*test_merge_123[i][1])/600
+
+for i in range(600):
+    meanx1[0]+=(test_merge_123[i][0])/600
+    meanx1[1]+=(test_merge_123[i][1])/600
+    
+
+for i in range(600):
+    meany2+=(w2[0]*test_merge_124[i][0]+w2[1]*test_merge_124[i][1])/600
+
+for i in range(600):
+    meanx2[0]+=(test_merge_124[i][0])/600
+    meanx2[1]+=(test_merge_124[i][1])/600
+    
+
+    
+for i in range(600):
+    meany3+=(w3[0]*test_merge_134[i][0]+w3[1]*test_merge_134[i][1])/600
+
+for i in range(600):
+    meanx3[0]+=(test_merge_134[i][0])/600
+    meanx3[1]+=(test_merge_134[i][1])/600
+    
+
+for i in range(600):
+    meany4+=(w4[0]*test_merge_234[i][0]+w4[1]*test_merge_234[i][1])/600
+
+for i in range(600):
+    meanx4[0]+=(test_merge_234[i][0])/600
+    meanx4[1]+=(test_merge_234[i][1])/600
+
+
+#判别函数，如果测试样本不属于现实中同类的那一侧则记为LDA算法的错误，将错误计数，以计算错误率
+false1y1=[]
+for i in range(100):
+    y4i=w1[0]*train1_4[i][0]+w1[1]*train1_4[i][1]
+    if y4i>=meany1:
+        false1y1.append(i)
+print('经切片123训练，正类测试集4错误率：'+str(len(false1y1))+'%')
+
+false1y2=[]
+for i in range(100):
+    y3i=w2[0]*train1_3[i][0]+w2[1]*train1_3[i][1]
+    if y3i>=meany2:
+        false1y2.append(i)
+print('经切片124训练，正类测试集3错误率：'+str(len(false1y2))+'%')
+
+false1y3=[]
+for i in range(100):
+    y2i=w3[0]*train1_2[i][0]+w3[1]*train1_2[i][1]
+    if y2i>=meany3:
+        false1y3.append(i)
+print('经切片134训练，正类测试集2错误率：'+str(len(false1y3))+'%')
+
+false1y4=[]        
+for i in range(100):
+    y1i=w4[0]*train1_1[i][0]+w4[1]*train1_1[i][1]
+    if y1i>=meany4:
+        false1y4.append(i)
+print('经切片234训练，正类测试集1错误率：'+str(len(false1y4))+'%')
+
+false2y1=[]
+for i in range(100):
+    y4i=w1[0]*train2_4[i][0]+w1[1]*train2_4[i][1]
+    if y4i<=meany1:
+        false2y1.append(i)
+print('经切片123训练，负类测试集4错误率：'+str(len(false2y1))+'%')
+
+false2y2=[]
+for i in range(100):
+    y3i=w2[0]*train2_3[i][0]+w2[1]*train2_3[i][1]
+    if y3i<=meany2:
+        false2y2.append(i)
+print('经切片124训练，负类测试集3错误率：'+str(len(false2y2))+'%')
+
+
+false2y3=[]
+for i in range(100):
+    y2i=w3[0]*train2_2[i][0]+w3[1]*train2_2[i][1]
+    if y2i<=meany3:
+        false2y3.append(i)
+print('经切片134训练，负类测试集2错误率：'+str(len(false2y3))+'%')
+
+false2y4=[]        
+for i in range(100):
+    y1i=w4[0]*train2_1[i][0]+w4[1]*train2_1[i][1]
+    if y1i<=meany4:
+        false2y4.append(i)
+print('经切片234训练，负类测试集1错误率：'+str(len(false2y4))+'%')
