@@ -1,5 +1,7 @@
 # LDA
 the code and data of linear discriminant analysis
+
+
 1.data
 lda_data1.xlsx，lda_data1.xlsx为原始数据，python运行时请放置C盘目录下
 
