@@ -131,7 +131,7 @@ plt.legend()
 plt.savefig('D:\my_plot.jpg',dpi=3600)
 
 
-#采用留一法进行验证，首先进行数据集切片，正类负类各有400个，以100个为单位切片。共8份数据集
+#采用k折交叉检验法进行验证，首先进行数据集切片，正类负类各有400个，以100个为单位切片。共8份数据集
 c1=import_excel_matrix(data_file1)
 c2=import_excel_matrix(data_file2)
 train1_1=c1[0:100,0:2]
