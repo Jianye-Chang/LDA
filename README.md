@@ -21,6 +21,7 @@ my_plot.jpg that is generated after execution of Python code，if you  want to c
 4.result
 ---
 code result1 is my_plot.jpg
+
 code result2 is algorithm error rate,which is presented in python
 
 
