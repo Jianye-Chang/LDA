@@ -16,7 +16,7 @@ lda_data1.xlsx and lda_data1.xlsx is the raw data file,please place them at C di
 
 3.picture
 ---
-my_plot.jpg that is generated after execution of Python code，if you  want to check it ,please run the python code and See the pictur in D disk
+my_plot.jpg that is generated after execution of Python code，if you  want to check it ,please run the python code and See the picture in D disk
 
 4.result
 ---
